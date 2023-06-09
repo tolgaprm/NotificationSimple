@@ -1,8 +1,11 @@
 package com.prmto.notificationsimple
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat.getSystemService
 import com.prmto.notificationsimple.ui.theme.NotificationSimpleTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,11 +34,13 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
+
                     val builder = NotificationCompat.Builder(context, "channelId")
                         .setSmallIcon(R.drawable.sport_icon)
                         .setContentTitle("Spor Bildirimleri")
                         .setContentText("Nba finallerinde Denver Nuggets ve Miami Heat.")
                         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                        .setContentIntent(createPendingIntent(context))
 
                     createNotificationChannel(context)
 
@@ -52,12 +56,7 @@ class MainActivity : ComponentActivity() {
 
                         Button(onClick = {
                             NotificationManagerCompat.from(context).notify(
-                                1, builder
-                                    .setContentText("Nba finallerinde Denver Nuggets ve Miami Heat karşılaşacak. Denver'de dikkat çeken oyuncu Nikola Jokic")
-                                    .setStyle(
-                                        NotificationCompat.BigTextStyle()
-                                            .bigText("Nba finallerinde Denver Nuggets ve Miami Heat karşılaşacak. Denver'de dikkat çeken oyuncu Nikola Jokic, Miami tarafında dikkat çeken oyuncu Jimmy Butler")
-                                    ).build()
+                                1, notificationCompatBigText(builder)
                             )
                         }) {
                             Text(text = getString(R.string.update_notification))
@@ -73,31 +72,43 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
+    private fun createNotificationChannel(context: Context) {
+        // Sadece API 26+ için NotificationChannel oluşturun
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Spor Bildirimleri"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("channelId", name, importance)
 
-fun notificationCompatBigText(context: Context) {
-    var builder = NotificationCompat.Builder(context, "channelId")
-        .setSmallIcon(R.drawable.baseline_notifications_24)
-        .setContentTitle("Notification Title")
-        .setContentText("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
-        .setStyle(
-            NotificationCompat.BigTextStyle()
-                .bigText("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+            // Sisteme kanalı (channel) kaydedin
+            val notificationManager: NotificationManager =
+                context.getSystemService(NotificationManager::class.java) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun createPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        return PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
         )
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-}
+    }
 
-private fun createNotificationChannel(context: Context) {
-    // Sadece API 26+ için NotificationChannel oluşturun
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val name = "Spor Bildirimleri"
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val channel = NotificationChannel("channelId", name, importance)
-
-        // Sisteme kanalı (channel) kaydedin
-        val notificationManager: NotificationManager =
-            getSystemService(context, NotificationManager::class.java) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
+    private fun notificationCompatBigText(builder: NotificationCompat.Builder): Notification {
+        return builder
+            .setContentText("Nba finallerinde Denver Nuggets ve Miami Heat karşılaşacak. Denver'de dikkat çeken oyuncu Nikola Jokic")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("Nba finallerinde Denver Nuggets ve Miami Heat karşılaşacak. Denver'de dikkat çeken oyuncu Nikola Jokic, Miami tarafında dikkat çeken oyuncu Jimmy Butler")
+            )
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
     }
 }
+
+
